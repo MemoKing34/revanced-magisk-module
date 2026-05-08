@@ -8,6 +8,8 @@ parallel-jobs = 1
 
 [YouTube]
 build-mode = "both"
+patches-source = "Raudrobot/revanced-patches"
+cli-source = "ReVanced/revanced-cli"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube"
 uptodown-dlurl = "https://youtube.en.uptodown.com/android"
 archive-dlurl = "https://archive.org/download/jhc-apks/apks/com.google.android.youtube"
@@ -25,6 +27,8 @@ archive-dlurl = "https://archive.org/download/jhc-apks/apks/com.google.android.y
 [Music]
 build-mode = "both"
 arch = "both"
+patches-source = "Raudrobot/revanced-patches"
+cli-source = "ReVanced/revanced-cli"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube-music"
 uptodown-dlurl = "https://youtube-music.en.uptodown.com/android"
 archive-dlurl = "https://archive.org/download/jhc-apks/apks/com.google.android.apps.youtube.music"
@@ -64,11 +68,14 @@ include-stock = "split"
 [GooglePhotos]
 build-mode = "both"
 arch = "both"
+patches-source = "Raudrobot/revanced-patches"
+cli-source = "ReVanced/revanced-cli"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/photos/"
 uptodown-dlurl = "https://google-photos.en.uptodown.com/android"
 archive-dlurl = "https://archive.org/download/jhc-apks/apks/com.google.android.apps.photos"
 
 [Twitch]
-enabled = false
+patches-source = "Raudrobot/revanced-patches"
+cli-source = "ReVanced/revanced-cli"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/"
 uptodown-dlurl = "https://twitch.en.uptodown.com/android"
