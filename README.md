@@ -14,6 +14,10 @@ Use [**zygisk-detach**](https://github.com/j-hc/zygisk-detach) to detach YouTube
  <li> Can build Magisk modules and non-root APKs</li>
  <li> Updated daily with the latest versions of apps and patches</li>
  <li> Optimize APKs and modules for size</li>
+ <li> Supports all present and future ReVanced apps (including projects implementing the same API)</li>
+ <li> Can build Magisk modules and non-root APKs</li>
+ <li> Updated daily with the latest versions of apps and patches</li>
+ <li> Optimizes APKs and modules for size</li>
  <li> Modules</li>
     <ul>
      <li> recompile invalidated odex for faster usage</li>
@@ -36,6 +40,13 @@ Note that the <a href="../../actions/workflows/ci.yml">CI workflow</a> is schedu
 
 also see here [`CONFIG.md`](./CONFIG.md)
 
+## If you are having trouble with the classic mount method of the modules
+such as,
+- **"Reflash needed"** error after reboots
+- **"Suspicious mount detected"** warnings from root detector apps
+
+You can consider using [rvmm-zygisk-mount](https://github.com/j-hc/rvmm-zygisk-mount)
+
 ## Building Locally
 ### On Termux
 ```console
@@ -45,6 +56,9 @@ bash <(curl -sSf https://raw.githubusercontent.com/j-hc/revanced-magisk-module/m
 ### On Desktop
 ```console
 $ git clone https://github.com/j-hc/revanced-magisk-module
+### On Linux
+```console
+$ git clone https://github.com/j-hc/revanced-magisk-module --depth 1
 $ cd revanced-magisk-module
 $ ./build.sh
 ```

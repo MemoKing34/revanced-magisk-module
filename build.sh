@@ -11,6 +11,16 @@ fi
 
 source utils.sh
 
+
+source utils.sh
+
+trap "abort" INT
+
+if [ "${1-}" = "clean" ]; then
+	rm -r "$TEMP_DIR" "$BUILD_DIR" build.md
+	exit 0
+fi
+
 jq --version >/dev/null || abort "\`jq\` is not installed. install it with 'apt install jq' or equivalent"
 java --version >/dev/null || abort "\`openjdk 17\` is not installed. install it with 'apt install openjdk-17-jre' or equivalent"
 zip --version >/dev/null || abort "\`zip\` is not installed. install it with 'apt install zip' or equivalent"
@@ -31,6 +41,7 @@ DEF_PATCHES_VER=$(toml_get "$main_config_t" patches-version) || DEF_PATCHES_VER=
 DEF_CLI_VER=$(toml_get "$main_config_t" cli-version) || DEF_CLI_VER="latest"
 DEF_PATCHES_SRC=$(toml_get "$main_config_t" patches-source) || DEF_PATCHES_SRC="ReVanced/revanced-patches"
 DEF_CLI_SRC=$(toml_get "$main_config_t" cli-source) || DEF_CLI_SRC="j-hc/revanced-cli"
+DEF_CLI_SRC=$(toml_get "$main_config_t" cli-source) || DEF_CLI_SRC="ReVanced/revanced-cli"
 DEF_RV_BRAND=$(toml_get "$main_config_t" rv-brand) || DEF_RV_BRAND="ReVanced"
 mkdir -p "$TEMP_DIR" "$BUILD_DIR"
 
@@ -51,6 +62,17 @@ rm -rf revanced-magisk/bin/*/tmp.*
 if [ "$(echo "$TEMP_DIR"/*-rv/changelog.md)" ]; then
 	: >"$TEMP_DIR"/*-rv/changelog.md || :
 fi
+ENABLE_MODULE_UPDATE=$(toml_get "$main_config_t" enable-module-update) || ENABLE_MODULE_UPDATE=true
+if [ "$ENABLE_MODULE_UPDATE" = true ] && [ -z "${GITHUB_REPOSITORY-}" ]; then
+	pr "You are building locally. Module updates will not be enabled."
+	ENABLE_MODULE_UPDATE=false
+fi
+if ((COMPRESSION_LEVEL > 9)) || ((COMPRESSION_LEVEL < 0)); then abort "compression-level must be within 0-9"; fi
+
+rm -rf module/bin/*/tmp.*
+for file in "$TEMP_DIR"/*/changelog.md; do
+	[ -f "$file" ] && : >"$file"
+done
 
 mkdir -p ${MODULE_TEMPLATE_DIR}/bin/arm64 ${MODULE_TEMPLATE_DIR}/bin/arm ${MODULE_TEMPLATE_DIR}/bin/x86 ${MODULE_TEMPLATE_DIR}/bin/x64
 gh_dl "${MODULE_TEMPLATE_DIR}/bin/arm64/cmpr" "https://github.com/j-hc/cmpr/releases/latest/download/cmpr-arm64-v8a"
@@ -93,6 +115,13 @@ for table_name in $(toml_get_table_names); do
 		fi
 	fi
 	if [ "${app_args[riplib]}" = "true" ] && [ "$(toml_get "$t" riplib)" = "false" ]; then app_args[riplib]=false; fi
+	if ! PREBUILTS="$(get_prebuilts "$cli_src" "$cli_ver" "$patches_src" "$patches_ver")"; then
+		epr "Could not get prebuilts"
+		continue
+	fi
+	read -r cli_jar patches_jar <<<"$PREBUILTS"
+	app_args[cli]=$cli_jar
+	app_args[ptjar]=$patches_jar
 	app_args[rv_brand]=$(toml_get "$t" rv-brand) || app_args[rv_brand]=$DEF_RV_BRAND
 
 	app_args[excluded_patches]=$(toml_get "$t" excluded-patches) || app_args[excluded_patches]=""
@@ -131,6 +160,30 @@ for table_name in $(toml_get_table_names); do
 
 	app_args[include_stock]=$(toml_get "$t" include-stock) || app_args[include_stock]=true && vtf "${app_args[include_stock]}" "include-stock"
 	app_args[dpi]=$(toml_get "$t" dpi) || app_args[dpi]="nodpi"
+	app_args[include_stock]=$(toml_get "$t" include-stock) && {
+		if ! isoneof "${app_args[include_stock]}" disable merged split; then
+			abort "ERROR: include-stock '${app_args[include_stock]}' is not a valid option for '${table_name}': only 'disable', 'merged' or 'split' is allowed"
+		fi
+	} || app_args[include_stock]=merged
+
+	for dl_from in "${DL_SRCS[@]}"; do
+		if app_args[${dl_from}_dlurl]=$(toml_get "$t" "${dl_from}-dlurl"); then
+			app_args[${dl_from}_dlurl]=${app_args[${dl_from}_dlurl]%/}
+			app_args[${dl_from}_dlurl]=${app_args[${dl_from}_dlurl]%download}
+			app_args[${dl_from}_dlurl]=${app_args[${dl_from}_dlurl]%/}
+			app_args[dl_from]=${dl_from}
+		else
+			app_args[${dl_from}_dlurl]=""
+		fi
+	done
+	if [ -z "${app_args[dl_from]-}" ]; then abort "ERROR: no 'dlurl' option was set for '$table_name'. (${DL_SRCS[*]})"; fi
+	app_args[arch]=$(toml_get "$t" arch) || app_args[arch]="all"
+	if ! isoneof "${app_args[arch]}" "both" "all" "arm64-v8a" "arm-v7a" "x86_64" "x86"; then
+		abort "wrong arch '${app_args[arch]}' for '$table_name'"
+	fi
+
+	app_args[pkg_name]=$(toml_get "$t" pkg-name) || app_args[pkg_name]=""
+	app_args[dpi]=$(toml_get "$t" dpi) || app_args[dpi]=""
 	table_name_f=${table_name,,}
 	table_name_f=${table_name_f// /-}
 	app_args[module_prop_name]=$(toml_get "$t" module-prop-name) || app_args[module_prop_name]="${table_name_f}-jhc"
@@ -169,6 +222,9 @@ log "\nInstall [Microg](https://github.com/ReVanced/GmsCore/releases) for non-ro
 log "Use [zygisk-detach](https://github.com/j-hc/zygisk-detach) to detach root ReVanced YouTube and YT Music from Play Store"
 log "\n[revanced-magisk-module](https://github.com/j-hc/revanced-magisk-module)\n"
 log "$(cat "$TEMP_DIR"/*-rv/changelog.md)"
+log "Use [zygisk-detach](https://github.com/j-hc/zygisk-detach) to detach YouTube and YT Music modules from Play Store"
+log "\n[revanced-magisk-module](https://github.com/j-hc/revanced-magisk-module)\n"
+log "$(cat "$TEMP_DIR"/*/changelog.md)"
 
 SKIPPED=$(cat "$TEMP_DIR"/skipped 2>/dev/null || :)
 if [ -n "$SKIPPED" ]; then
