@@ -1,6 +1,6 @@
 {
   "version": "v8.40.54 (patches 6.1.0.rvp)",
-  "versionCode": 10,
-  "zipUrl": "https://github.com/MemoKing34/revanced-magisk-module/releases/download/10/music-revanced-module-v8.40.54-arm-v7a.zip",
+  "versionCode": 18,
+  "zipUrl": "https://github.com/MemoKing34/revanced-magisk-module/releases/download/18/music-revanced-module-v8.40.54-arm-v7a.zip",
   "changelog": "https://raw.githubusercontent.com/MemoKing34/revanced-magisk-module/update/build.md"
 }
